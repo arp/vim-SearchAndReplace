@@ -1,0 +1,72 @@
+*search_and_replace.txt*  For Vim version 9.0.  Last change: 2025 Nov 19
+
+                SEARCH AND REPLACE PLUGIN REFERENCE MANUAL
+
+==============================================================================
+CONTENTS                                          *SearchAndReplace-contents*
+
+1. Introduction .................................. |SearchAndReplace-intro|
+2. Usage ......................................... |SearchAndReplace-usage|
+3. Commands ...................................... |SearchAndReplace-commands|
+4. Interactive Keys .............................. |SearchAndReplace-keys|
+
+==============================================================================
+1. Introduction                                   *SearchAndReplace-intro*
+
+SearchAndReplace is a Vim 9 plugin designed to provide a convenient way to
+perform global search and replace operations across multiple files. Internally,
+it uses :grep command to find matches and allows for interactive
+replacement with context highlighting.
+
+==============================================================================
+2. Usage                                          *SearchAndReplace-usage*
+
+The plugin exposes a single command `:SR` which accepts the search term,
+replacement string, and an optional file pattern.
+
+Example: >
+    :SR foo bar **/*.js
+<
+This will search for "foo" in all `.js` files recursively and prompt you to
+replace it with "bar". The matches are added to the quickfix list, which is
+then processed interactively.
+
+Additionally, arguments can be quoted with single or double quotes.
+
+- Single quotes: Use `''` to escape a single quote inside.
+  Example: `'It''s me'` -> `It's me`
+
+- Double quotes: Use backslash to escape characters.
+  Example: `"\"Hello\""` -> `"Hello"`
+
+==============================================================================
+3. Commands                                       *SearchAndReplace-commands*
+
+:SR {search} {replace} [pattern]                  *:SR*
+        Search for {search} string (fixed string, not regex) and replace it
+        with {replace} string in files matching [pattern].
+        
+        If [pattern] is omitted, it defaults to "**/*" (all files).
+
+        The search is performed using `:grep -F`, so it treats the search
+        term as a literal string.
+
+==============================================================================
+4. Interactive Keys                               *SearchAndReplace-keys*
+
+When a match is found, the plugin will display the line with the match
+highlighted and prompt for an action. The following keys are available:
+
+y   Replace the current match.
+n   Skip the current match.
+a   Replace all remaining matches without further prompting.
+q   Quit the operation, keeping the already applied replacements.
+u   Undo the last replacement (only available if a replacement was made).
+c   Cancel the whole operation (undo all changes made in this session and quit).
+
+The specific match to be replaced is highlighted with bold and underline,
+while other occurrences of the search term in the line are highlighted
+subtly.
+
+==============================================================================
+ vim:tw=78:ts=8:noet:ft=help:norl:
