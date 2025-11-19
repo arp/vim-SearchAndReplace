@@ -14,7 +14,7 @@ def SearchAndReplace(args_str: string)
 
     var search_term = args[0]
     var replace_term = args[1]
-    var pattern = "**/*"
+    var pattern = "."
 
     if len(args) >= 3
         pattern = args[2]
@@ -25,7 +25,8 @@ def SearchAndReplace(args_str: string)
     echo "Replace Term: " .. replace_term
     echo "Pattern: " .. pattern
     
-    var grep_cmd = 'grep! -F ' .. shellescape(search_term) .. ' ' .. pattern
+    # Use -r for recursive search to avoid shell expansion issues with **/*
+    var grep_cmd = 'grep! -r -F ' .. shellescape(search_term) .. ' ' .. pattern
     echo "Executing: " .. grep_cmd
 
     # 1. Search for the search term with :grep -F
