@@ -63,6 +63,11 @@ The plugin exposes a single, intuitive command `:SR`.
 :SR '"foo" + "bar"' "\"foos\" + \"bars\""
 ```
 
+**Handling backslashes (use single quotes or double backslashes):**
+```vim
+:SR '\foo\bar' "\\foos\\bars"
+```
+
 ### Interactive Controls
 
 When a match is found, you are prompted with the following options:
