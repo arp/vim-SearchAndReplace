@@ -42,11 +42,11 @@ Additionally, arguments can be quoted with single or double quotes.
 ==============================================================================
 3. Commands                                       *SearchAndReplace-commands*
 
-:SR {search} {replace} [pattern]                  *:SR*
+:SR {search} {replace} [file_pattern]                  *:SR*
         Search for {search} string (fixed string, not regex) and replace it
-        with {replace} string in files matching [pattern].
+        with {replace} string in files matching [file_pattern].
         
-        If [pattern] is omitted, it defaults to "." (current directory).
+        If [file_pattern] is omitted, it defaults to "." (current directory).
 
         The search is performed using `:grep -r -F`, so it treats the search
         term as a literal string and searches recursively.
