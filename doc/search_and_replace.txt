@@ -6,9 +6,14 @@
 CONTENTS                                          *SearchAndReplace-contents*
 
 1. Introduction .................................. |SearchAndReplace-intro|
-2. Usage ......................................... |SearchAndReplace-usage|
-3. Commands ...................................... |SearchAndReplace-commands|
-4. Interactive Keys .............................. |SearchAndReplace-keys|
+2. Installation .................................. |SearchAndReplace-install|
+3. Usage ......................................... |SearchAndReplace-usage|
+4. Commands ...................................... |SearchAndReplace-commands|
+5. Interactive Keys .............................. |SearchAndReplace-keys|
+2. Installation .................................. |SearchAndReplace-install|
+3. Usage ......................................... |SearchAndReplace-usage|
+4. Commands ...................................... |SearchAndReplace-commands|
+5. Interactive Keys .............................. |SearchAndReplace-keys|
 
 ==============================================================================
 1. Introduction                                   *SearchAndReplace-intro*
@@ -19,7 +24,24 @@ it uses :grep command to find matches and allows for interactive
 replacement with context highlighting.
 
 ==============================================================================
-2. Usage                                          *SearchAndReplace-usage*
+2. Installation                                   *SearchAndReplace-install*
+
+This plugin requires Vim 9.0 or higher.
+
+Pathogen: >
+    git clone https://github.com/arp/vim-SearchAndReplace.git ~/.vim/bundle/vim-SearchAndReplace
+<
+
+vim-plug: >
+    Plug 'arp/vim-SearchAndReplace'
+<
+
+Native Vim Packages: >
+    git clone https://github.com/arp/vim-SearchAndReplace.git ~/.vim/pack/plugins/start/vim-SearchAndReplace
+<
+
+==============================================================================
+3. Usage                                          *SearchAndReplace-usage*
 
 The plugin exposes a single command `:SR` which accepts the search term,
 replacement string, and an optional file pattern.
@@ -40,7 +62,7 @@ Additionally, arguments can be quoted with single or double quotes.
   Example: `"\"Hello\""` -> `"Hello"`
 
 ==============================================================================
-3. Commands                                       *SearchAndReplace-commands*
+4. Commands                                       *SearchAndReplace-commands*
 
 :SR {search} {replace} [file_pattern]                  *:SR*
         Search for {search} string (fixed string, not regex) and replace it
@@ -57,7 +79,7 @@ Additionally, arguments can be quoted with single or double quotes.
 <
 
 ==============================================================================
-4. Interactive Keys                               *SearchAndReplace-keys*
+5. Interactive Keys                               *SearchAndReplace-keys*
 
 When a match is found, the plugin will display the line with the match
 highlighted and prompt for an action. The following keys are available:

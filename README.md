@@ -4,6 +4,25 @@ Global search and replace in Vim has always been a bit of a hassle. While powerf
 
 I decided to fix this problem with a simple and quick solution: **vim-SearchAndReplace**.
 
+## Installation
+
+Requires Vim 9.0+.
+
+**Pathogen:**
+```bash
+git clone https://github.com/arp/vim-SearchAndReplace.git ~/.vim/bundle/vim-SearchAndReplace
+```
+
+**vim-plug:**
+```vim
+Plug 'arp/vim-SearchAndReplace'
+```
+
+**Native Vim Packages:**
+```bash
+git clone https://github.com/arp/vim-SearchAndReplace.git ~/.vim/pack/plugins/start/vim-SearchAndReplace
+```
+
 ## Usage
 
 The plugin exposes a single, intuitive command `:SR`.
