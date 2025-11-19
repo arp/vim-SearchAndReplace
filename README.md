@@ -1,7 +1,4 @@
 # vim-SearchAndReplace
-<<<<<<< HEAD
-Global Search and Replace Plugin for Vim
-=======
 
 Global search and replace in Vim has always been a bit of a hassle. While powerful, the native methods often feel clunky or require too many keystrokes for simple, interactive renaming across a project.
 
@@ -67,4 +64,3 @@ Pull requests and issues are welcome! If you find a bug or have a feature reques
 MIT
 
 Copyright (c) 2025 Artur Pyrogovskyi (@arp)
->>>>>>> 22dbee8 (added README and updated the docs)
