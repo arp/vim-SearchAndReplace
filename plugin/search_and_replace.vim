@@ -97,8 +97,13 @@ def SearchAndReplace(...args: list<string>)
             echo line_content
             
             # Highlight the search term
-            # IncSearch highlights all matches (like /)
-            var match_id = matchadd('IncSearch', '\V' .. escape(search_term, '\'))
+            # SRSubtle highlights all matches (context) - mild gray background
+            if &background == 'dark'
+                highlight SRSubtle ctermbg=237 guibg=#3a3a3a guifg=NONE ctermfg=NONE
+            else
+                highlight SRSubtle ctermbg=253 guibg=#dadada guifg=NONE ctermfg=NONE
+            endif
+            var match_id = matchadd('SRSubtle', '\V' .. escape(search_term, '\'))
             
             # SRMatch highlights ONLY the current match to be replaced (bold, underline + IncSearch colors)
             var specific_pattern = '\%' .. item.lnum .. 'l\%' .. (col + 1) .. 'c\V' .. escape(search_term, '\')
