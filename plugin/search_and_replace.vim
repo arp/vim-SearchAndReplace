@@ -69,67 +69,84 @@ def SearchAndReplace(...args: list<string>)
         # Switch to the buffer and line
         execute 'buffer ' .. item.bufnr
         cursor(item.lnum, 1)
-        # Try to find the column if not provided by grep (grep -F might not give column)
-        # We search for the term in the line to highlight it or position cursor better.
-        var line_content = getline(item.lnum)
-        var col = stridx(line_content, search_term)
-        if col == -1
-            # Term not found on this line? Maybe file changed or grep output stale.
-            continue
-        endif
-        cursor(item.lnum, col + 1)
         
-        redraw
-        # echo "Match found in " .. bufname(item.bufnr) .. ":" .. item.lnum
-        # echo line_content
-
-        var choice = ''
-        if replace_all
-            choice = 'y'
-        else
-            echo "Match found in " .. bufname(item.bufnr) .. ":" .. item.lnum
-            echo line_content
+        var line_content = getline(item.lnum)
+        var start_col = 0
+        
+        while true
+            var col = stridx(line_content, search_term, start_col)
+            if col == -1
+                break
+            endif
             
-            # Highlight the search term
-            # IncSearch highlights all matches (like /)
-            var match_id = matchadd('IncSearch', '\V' .. escape(search_term, '\'))
-            
-            # SRMatch highlights ONLY the current match to be replaced (bold, underline + IncSearch colors)
-            # Use \%l and \%c to match specific line and column
-            # Note: col is 0-indexed byte index, \%c expects 1-indexed column
-            var specific_pattern = '\%' .. item.lnum .. 'l\%' .. (col + 1) .. 'c\V' .. escape(search_term, '\')
-            var match_id2 = matchadd('SRMatch', specific_pattern, 11)
+            cursor(item.lnum, col + 1)
             
             redraw
-            
-            echo "Replace (y/n/a/q)? "
-            choice = getcharstr()
-            redraw
-            
-            # Remove highlight
-            matchdelete(match_id)
-            matchdelete(match_id2)
-        endif
+            # echo "Match found in " .. bufname(item.bufnr) .. ":" .. item.lnum
+            # echo line_content
 
-        if choice == 'q'
-            break
-        elseif choice == 'a'
-            replace_all = true
-            choice = 'y'
-        endif
+            var choice = ''
+            if replace_all
+                choice = 'y'
+            else
+                echo "Match found in " .. bufname(item.bufnr) .. ":" .. item.lnum
+                echo line_content
+                
+                # Highlight the search term
+                # IncSearch highlights all matches (like /)
+                var match_id = matchadd('IncSearch', '\V' .. escape(search_term, '\'))
+                
+                # SRMatch highlights ONLY the current match to be replaced (bold, underline + IncSearch colors)
+                # Use \%l and \%c to match specific line and column
+                # Note: col is 0-indexed byte index, \%c expects 1-indexed column
+                var specific_pattern = '\%' .. item.lnum .. 'l\%' .. (col + 1) .. 'c\V' .. escape(search_term, '\')
+                var match_id2 = matchadd('SRMatch', specific_pattern, 11)
+                
+                redraw
+                
+                echo "Replace (y/n/a/q)? "
+                choice = getcharstr()
+                redraw
+                
+                # Remove highlight
+                matchdelete(match_id)
+                matchdelete(match_id2)
+            endif
 
-        if choice == 'y'
-            # Perform replacement
-            var new_line = substitute(line_content, '\V' .. escape(search_term, '\'), replace_term, '')
-            setline(item.lnum, new_line)
-            
-            # Mark buffer as modified (setline does this)
-            update
-            
-            add(logs, "Replaced in " .. bufname(item.bufnr) .. ":" .. item.lnum)
-            add(logs, "  Old: " .. line_content)
-            add(logs, "  New: " .. new_line)
-        endif
+            if choice == 'q'
+                return
+            elseif choice == 'a'
+                replace_all = true
+                choice = 'y'
+            endif
+
+            if choice == 'y'
+                # Perform replacement
+                # We replace only the occurrence at 'col'
+                # line_content[0 : col - 1] is before match
+                # line_content[col + len(search_term) : ] is after match
+                var prefix = (col > 0) ? line_content[0 : col - 1] : ''
+                var suffix = line_content[col + len(search_term) : ]
+                var new_line = prefix .. replace_term .. suffix
+                
+                setline(item.lnum, new_line)
+                
+                # Mark buffer as modified (setline does this)
+                update
+                
+                add(logs, "Replaced in " .. bufname(item.bufnr) .. ":" .. item.lnum)
+                add(logs, "  Old: " .. line_content)
+                add(logs, "  New: " .. new_line)
+                
+                # Update line_content for next iteration
+                line_content = new_line
+                # Advance start_col past the replacement to avoid infinite loop if recursive
+                start_col = col + len(replace_term)
+            else
+                # Skip this match
+                start_col = col + len(search_term)
+            endif
+        endwhile
     endfor
     
     if !empty(logs)
