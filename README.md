@@ -60,7 +60,7 @@ The plugin exposes a single, intuitive command `:SR`.
 
 **Handling double quotes (use single quotes or backslash):**
 ```vim
-:SR '"foo" + "bar"' "\"foo\" + \"bar\""
+:SR '"foo" + "bar"' "\"foos\" + \"bars\""
 ```
 
 ### Interactive Controls
