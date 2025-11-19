@@ -50,19 +50,24 @@ def SearchAndReplace(...args: list<string>)
     var logs = []
     # Create the combined highlight group
     CreateCombinedHighlight('IncSearch', 'SRMatch')
+    
+    var i = 0
+    var start_col = 0
+    var history = []
 
     # 3. Ask for every quickfix in the list
-    # We iterate by index to potentially modify the list or track progress if needed,
-    # but mostly we just need the item.
-    for i in range(len(qflist))
+    while i < len(qflist)
         var item = qflist[i]
         if item.valid == 0
+            i += 1
+            start_col = 0
             continue
         endif
 
         # Load buffer if not loaded
         if !bufexists(item.bufnr)
-            # This shouldn't happen often if grep found it, but good to be safe
+            i += 1
+            start_col = 0
             continue
         endif
         
@@ -71,83 +76,129 @@ def SearchAndReplace(...args: list<string>)
         cursor(item.lnum, 1)
         
         var line_content = getline(item.lnum)
-        var start_col = 0
         
-        while true
-            var col = stridx(line_content, search_term, start_col)
-            if col == -1
-                break
-            endif
+        var col = stridx(line_content, search_term, start_col)
+        if col == -1
+            # No more matches on this line, move to next item
+            i += 1
+            start_col = 0
+            continue
+        endif
+        
+        cursor(item.lnum, col + 1)
+        
+        redraw
+
+        var choice = ''
+        if replace_all
+            choice = 'y'
+        else
+            echo "Match found in " .. bufname(item.bufnr) .. ":" .. item.lnum
+            echo line_content
             
-            cursor(item.lnum, col + 1)
+            # Highlight the search term
+            # IncSearch highlights all matches (like /)
+            var match_id = matchadd('IncSearch', '\V' .. escape(search_term, '\'))
+            
+            # SRMatch highlights ONLY the current match to be replaced (bold, underline + IncSearch colors)
+            var specific_pattern = '\%' .. item.lnum .. 'l\%' .. (col + 1) .. 'c\V' .. escape(search_term, '\')
+            var match_id2 = matchadd('SRMatch', specific_pattern, 11)
             
             redraw
-            # echo "Match found in " .. bufname(item.bufnr) .. ":" .. item.lnum
-            # echo line_content
-
-            var choice = ''
-            if replace_all
-                choice = 'y'
-            else
-                echo "Match found in " .. bufname(item.bufnr) .. ":" .. item.lnum
-                echo line_content
-                
-                # Highlight the search term
-                # IncSearch highlights all matches (like /)
-                var match_id = matchadd('IncSearch', '\V' .. escape(search_term, '\'))
-                
-                # SRMatch highlights ONLY the current match to be replaced (bold, underline + IncSearch colors)
-                # Use \%l and \%c to match specific line and column
-                # Note: col is 0-indexed byte index, \%c expects 1-indexed column
-                var specific_pattern = '\%' .. item.lnum .. 'l\%' .. (col + 1) .. 'c\V' .. escape(search_term, '\')
-                var match_id2 = matchadd('SRMatch', specific_pattern, 11)
-                
-                redraw
-                
-                echo "Replace (y/n/a/q)? "
+            
+            var prompt = "Replace (y/n/a/q"
+            var valid_keys = ['y', 'n', 'a', 'q']
+            if !empty(history)
+                prompt ..= "/u/c"
+                add(valid_keys, 'u')
+                add(valid_keys, 'c')
+            endif
+            prompt ..= ")? "
+            echo prompt
+            
+            while true
                 choice = getcharstr()
-                redraw
-                
-                # Remove highlight
-                matchdelete(match_id)
-                matchdelete(match_id2)
-            endif
+                if index(valid_keys, choice) != -1
+                    break
+                endif
+            endwhile
+            redraw
+            
+            # Remove highlight
+            matchdelete(match_id)
+            matchdelete(match_id2)
+        endif
 
-            if choice == 'q'
-                return
-            elseif choice == 'a'
-                replace_all = true
-                choice = 'y'
-            endif
-
-            if choice == 'y'
-                # Perform replacement
-                # We replace only the occurrence at 'col'
-                # line_content[0 : col - 1] is before match
-                # line_content[col + len(search_term) : ] is after match
-                var prefix = (col > 0) ? line_content[0 : col - 1] : ''
-                var suffix = line_content[col + len(search_term) : ]
-                var new_line = prefix .. replace_term .. suffix
-                
-                setline(item.lnum, new_line)
-                
-                # Mark buffer as modified (setline does this)
-                update
-                
-                add(logs, "Replaced in " .. bufname(item.bufnr) .. ":" .. item.lnum)
-                add(logs, "  Old: " .. line_content)
-                add(logs, "  New: " .. new_line)
-                
-                # Update line_content for next iteration
-                line_content = new_line
-                # Advance start_col past the replacement to avoid infinite loop if recursive
-                start_col = col + len(replace_term)
+        if choice == 'q'
+            if !empty(logs)
+                break # Break to show logs
             else
-                # Skip this match
-                start_col = col + len(search_term)
+                return
             endif
-        endwhile
-    endfor
+        elseif choice == 'c'
+            # Undo all changes
+            while !empty(history)
+                var state = remove(history, -1)
+                execute 'buffer ' .. state.bufnr
+                setline(state.lnum, state.old_line_content)
+                update
+            endwhile
+            echo "Cancelled. All changes undone."
+            return
+        elseif choice == 'a'
+            replace_all = true
+            choice = 'y'
+        elseif choice == 'u' && !empty(history)
+            var state = remove(history, -1)
+            
+            # Restore buffer content
+            execute 'buffer ' .. state.bufnr
+            setline(state.lnum, state.old_line_content)
+            update
+            
+            # Restore iteration state
+            i = state.i
+            start_col = state.start_col
+            
+            # Remove logs
+            if len(logs) > state.log_len
+                remove(logs, state.log_len, -1)
+            endif
+            
+            echo "Undone."
+            continue
+        endif
+
+        if choice == 'y'
+            # Save state BEFORE replacing
+            add(history, {
+                'i': i,
+                'start_col': start_col,
+                'bufnr': item.bufnr,
+                'lnum': item.lnum,
+                'old_line_content': line_content,
+                'log_len': len(logs)
+            })
+
+            # Perform replacement
+            var prefix = (col > 0) ? line_content[0 : col - 1] : ''
+            var suffix = line_content[col + len(search_term) : ]
+            var new_line = prefix .. replace_term .. suffix
+            
+            setline(item.lnum, new_line)
+            update
+            
+            add(logs, "Replaced in " .. bufname(item.bufnr) .. ":" .. item.lnum)
+            add(logs, "  Old: " .. line_content)
+            add(logs, "  New: " .. new_line)
+            
+            # Advance start_col past the replacement
+            start_col = col + len(replace_term)
+        else
+            # Skip this match (choice == 'n' or invalid input)
+            start_col = col + len(search_term)
+        endif
+    endwhile
     
     if !empty(logs)
         new
