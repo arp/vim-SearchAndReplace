@@ -51,6 +51,11 @@ Additionally, arguments can be quoted with single or double quotes.
         The search is performed using `:grep -r -F`, so it treats the search
         term as a literal string and searches recursively.
 
+        You can specify multiple patterns by separating them with spaces.
+        Example: >
+            :SR foo bar back/*.js front/*.tsx
+<
+
 ==============================================================================
 4. Interactive Keys                               *SearchAndReplace-keys*
 
