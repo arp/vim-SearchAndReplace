@@ -3,9 +3,10 @@ vim9script
 # SearchAndReplace Plugin
 # Usage: :SR 'search_term' 'replace_term' [pattern]
 
-command! -nargs=+ -complete=file SR SearchAndReplace(<f-args>)
+command! -nargs=+ -complete=file SR SearchAndReplace(<q-args>)
 
-def SearchAndReplace(...args: list<string>)
+def SearchAndReplace(args_str: string)
+    var args = ParseArgs(args_str)
     if len(args) < 2
         echoerr "Usage: :SR 'search_term' 'replace_term' [pattern]"
         return
@@ -16,7 +17,7 @@ def SearchAndReplace(...args: list<string>)
     var pattern = "**/*"
 
     if len(args) >= 3
-        pattern = join(args[2 : ], ' ')
+        pattern = args[2]
     endif
 
     # Debug output to help diagnose issues
@@ -25,7 +26,7 @@ def SearchAndReplace(...args: list<string>)
     echo "Pattern: " .. pattern
     
     var grep_cmd = 'grep! -F ' .. shellescape(search_term) .. ' ' .. pattern
-    # echo "Executing: " .. grep_cmd
+    echo "Executing: " .. grep_cmd
 
     # 1. Search for the search term with :grep -F
     try
@@ -205,6 +206,8 @@ def SearchAndReplace(...args: list<string>)
         endif
     endwhile
     
+    redraw
+    
     if !empty(logs)
         new
         setlocal buftype=nofile bufhidden=wipe noswapfile
@@ -252,4 +255,86 @@ def CreateCombinedHighlight(base: string, new_group: string)
     if !empty(ctermbg) | cmd ..= ' ctermbg=' .. ctermbg | endif
     
     execute cmd
+enddef
+
+def ParseArgs(input: string): list<string>
+    var args = []
+    var current_arg = ''
+    var in_quote = false
+    var quote_char = ''
+    var i = 0
+    var len = len(input)
+    
+    while i < len
+        var char = input[i]
+        
+        if in_quote
+            if quote_char == "'"
+                if char == "'"
+                    # Check for escaped quote (doubled quote char)
+                    if i + 1 < len && input[i + 1] == "'"
+                        current_arg ..= "'"
+                        i += 1 # Skip the next quote char
+                    else
+                        in_quote = false
+                    endif
+                else
+                    current_arg ..= char
+                endif
+            elseif quote_char == '"'
+                if char == '\'
+                    # Check for escaped char
+                    if i + 1 < len
+                        var next_char = input[i + 1]
+                        if next_char == '"' || next_char == '\'
+                            current_arg ..= next_char
+                            i += 1
+                        else
+                            current_arg ..= char
+                        endif
+                    else
+                        current_arg ..= char
+                    endif
+                elseif char == '"'
+                    # Check for escaped quote (doubled quote char) - optional but good for consistency if user does ""
+                    # But standard JSON/Vim double quotes use backslash.
+                    # Let's stick to backslash for double quotes as requested.
+                    in_quote = false
+                else
+                    current_arg ..= char
+                endif
+            endif
+        else
+            if char == '"' || char == "'"
+                in_quote = true
+                quote_char = char
+            elseif char == ' '
+                if !empty(current_arg)
+                    add(args, current_arg)
+                    current_arg = ''
+                endif
+                # If we already have 2 args (search and replace), the rest is the pattern
+                if len(args) == 2
+                    # Add the rest of the string as the pattern, trimming leading spaces
+                    var rest = input[i + 1 : ]
+                    # Trim leading spaces
+                    rest = substitute(rest, '^\s*', '', '')
+                    if !empty(rest)
+                        add(args, rest)
+                    endif
+                    return args
+                endif
+            else
+                current_arg ..= char
+            endif
+        endif
+        
+        i += 1
+    endwhile
+    
+    if !empty(current_arg)
+        add(args, current_arg)
+    endif
+    
+    return args
 enddef
