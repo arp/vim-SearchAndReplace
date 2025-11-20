@@ -50,8 +50,6 @@ def SearchAndReplace(args_str: string)
 
     var replace_all = false
     var logs = []
-    # Create the combined highlight group
-    CreateCombinedHighlight('IncSearch', 'SRMatch')
     
     var i = 0
     var start_col = 0
@@ -107,9 +105,9 @@ def SearchAndReplace(args_str: string)
             endif
             var match_id = matchadd('SRSubtle', '\V' .. escape(search_term, '\'))
             
-            # SRMatch highlights ONLY the current match to be replaced (bold, underline + IncSearch colors)
+            # IncSearch highlights ONLY the current match to be replaced
             var specific_pattern = '\%' .. item.lnum .. 'l\%' .. (col + 1) .. 'c\V' .. escape(search_term, '\')
-            var match_id2 = matchadd('SRMatch', specific_pattern, 11)
+            var match_id2 = matchadd('IncSearch', specific_pattern, 11)
             
             redraw
             
@@ -129,19 +127,16 @@ def SearchAndReplace(args_str: string)
                     break
                 endif
             endwhile
-            redraw
             
             # Remove highlight
             matchdelete(match_id)
             matchdelete(match_id2)
+
+            redraw
         endif
 
         if choice == 'q'
-            if !empty(logs)
-                break # Break to show logs
-            else
-                return
-            endif
+            break # Break to show logs
         elseif choice == 'c'
             # Undo all changes
             while !empty(history)
@@ -209,53 +204,14 @@ def SearchAndReplace(args_str: string)
     
     redraw
     
-    if !empty(logs)
+    if empty(logs)
+        echo "Search and replace completed. No changes made."
+    else
         new
         setlocal buftype=nofile bufhidden=wipe noswapfile
         setline(1, logs)
         echo "Search and replace completed. Log opened."
-    else
-        echo "\nSearch and replace completed. No changes made."
     endif
-enddef
-
-def CreateCombinedHighlight(base: string, new_group: string)
-    var id = synIDtrans(hlID(base))
-    var gui_attrs = []
-    var cterm_attrs = []
-    for attr in ['bold', 'italic', 'reverse', 'inverse', 'underline', 'undercurl', 'standout']
-        if synIDattr(id, attr, 'gui') == '1'
-            add(gui_attrs, attr)
-        endif
-        if synIDattr(id, attr, 'cterm') == '1'
-            add(cterm_attrs, attr)
-        endif
-    endfor
-    
-    # Add desired attributes
-    if index(gui_attrs, 'bold') == -1 | add(gui_attrs, 'bold') | endif
-    if index(gui_attrs, 'underline') == -1 | add(gui_attrs, 'underline') | endif
-    if index(cterm_attrs, 'bold') == -1 | add(cterm_attrs, 'bold') | endif
-    if index(cterm_attrs, 'underline') == -1 | add(cterm_attrs, 'underline') | endif
-    
-    var cmd = 'highlight ' .. new_group
-    if !empty(gui_attrs)
-        cmd ..= ' gui=' .. join(gui_attrs, ',')
-    endif
-    if !empty(cterm_attrs)
-        cmd ..= ' cterm=' .. join(cterm_attrs, ',')
-    endif
-    
-    var guifg = synIDattr(id, 'fg', 'gui')
-    if !empty(guifg) | cmd ..= ' guifg=' .. guifg | endif
-    var guibg = synIDattr(id, 'bg', 'gui')
-    if !empty(guibg) | cmd ..= ' guibg=' .. guibg | endif
-    var ctermfg = synIDattr(id, 'fg', 'cterm')
-    if !empty(ctermfg) | cmd ..= ' ctermfg=' .. ctermfg | endif
-    var ctermbg = synIDattr(id, 'bg', 'cterm')
-    if !empty(ctermbg) | cmd ..= ' ctermbg=' .. ctermbg | endif
-    
-    execute cmd
 enddef
 
 def ParseArgs(input: string): list<string>
