@@ -111,12 +111,11 @@ def SearchAndReplace(args_str: string)
             
             redraw
             
-            var prompt = "Replace (y/n/a/q"
-            var valid_keys = ['y', 'n', 'a', 'q']
+            var prompt = "Replace (y/n/a/q/c"
+            var valid_keys = ['y', 'n', 'a', 'q', 'c']
             if !empty(history)
-                prompt ..= "/u/c"
+                prompt ..= "/u"
                 add(valid_keys, 'u')
-                add(valid_keys, 'c')
             endif
             prompt ..= ")? "
             echo prompt
@@ -139,13 +138,17 @@ def SearchAndReplace(args_str: string)
             break # Break to show logs
         elseif choice == 'c'
             # Undo all changes
-            while !empty(history)
-                var state = remove(history, -1)
-                execute 'buffer ' .. state.bufnr
-                setline(state.lnum, state.old_line_content)
-                update
-            endwhile
-            echo "Cancelled. All changes undone."
+            if empty(history)
+                echo "Cancelled. No changes made."
+            else
+                while !empty(history)
+                    var state = remove(history, -1)
+                    execute 'buffer ' .. state.bufnr
+                    setline(state.lnum, state.old_line_content)
+                    update
+                endwhile
+                echo "Cancelled. All changes undone."
+            endif
             return
         elseif choice == 'a'
             replace_all = true
